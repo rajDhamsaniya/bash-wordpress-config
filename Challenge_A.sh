@@ -23,4 +23,21 @@ function infoBlue()
     echo -e "${BLUE}-----> $*"
 }
 
-infoBlue "try success"
+#infoBlue "try success"
+
+###########################
+infoBlue "Installing PHP"
+
+sudo apt-get php
+
+okayGreen "PHP is successfully installed"
+###########################
+
+###########################
+
+infoBlue "Installing MySql"
+sudo apt update
+sudo apt install mysql-server
+
+okayGreen "MySql is successfully installed"
+###########################
