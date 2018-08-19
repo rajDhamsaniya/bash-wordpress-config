@@ -102,8 +102,8 @@ sudo ln -s /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/;
 
 function documentRootDir(){
 	sudo mkdir -p /var/www/html/$DOMAIN_NAME;
-	cd /tmp/ && wget http://wordpress.org/latest.tar.gz;
-	tar -zxf latest.tar.gz --strip-components=1;
+	sudo cd /tmp/ && wget http://wordpress.org/latest.tar.gz;
+	sudo tar -zxf latest.tar.gz --strip-components=1;
 	sudo cp -R ./* /var/www/html/$DOMAIN_NAME;
 }
 
@@ -125,7 +125,7 @@ EOF
 
 function configDB(){
 	sudo cp /var/www/html/${DOMAIN_NAME}/wp-config-sample.php /var/www/html/${DOMAIN_NAME}/wp-config.php;
-	cd /var/www/html/${DOMAIN_NAME}
+	sudo cd /var/www/html/${DOMAIN_NAME}
 	sudo sed -i s/database_name_here/${DOMAIN_NAME}_db/ wp-config.php;
 	sudo sed -i s/username_here/$WP_DB_USERNAME/ wp-config.php;
 	sudo sed -i s/password_here/$WP_DB_PASSWORD/ wp-config.php;
