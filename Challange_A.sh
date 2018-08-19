@@ -6,8 +6,7 @@ echo 'Provide Password for MySql root(If not installed it will take it as root):
 read -s MYSQL_ROOT_PASSWORD;
 WP_DB_PASSWORD=$MYSQL_ROOT_PASSWORD
 WP_DB_USERNAME='root'
-echo 'Provide su access'
-sudo -v
+
 
 
 # WordPress Documentation: https://codex.wordpress.org/Installing_WordPress
@@ -78,7 +77,6 @@ sudo tee /etc/nginx/sites-available/$DOMAIN_NAME <<EOF
 server {
         listen 80;
         listen [::]:80;
-
         root /var/www/html/$DOMAIN_NAME;
         # Add index.php to the list if you are using PHP
         index index.php index.html index.htm index.nginx-debian.html;
@@ -90,7 +88,6 @@ server {
         #
         location ~ \.php$ {
                 include snippets/fastcgi-php.conf;
-
                 fastcgi_pass unix:/run/php/php7.2-fpm.sock;
         }
 }
@@ -102,8 +99,8 @@ sudo ln -s /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/;
 
 function documentRootDir(){
 	sudo mkdir -p /var/www/html/$DOMAIN_NAME;
-	sudo cd /tmp/ && wget http://wordpress.org/latest.tar.gz;
-	sudo tar -zxf latest.tar.gz --strip-components=1;
+	cd /tmp/ && wget http://wordpress.org/latest.tar.gz;
+	tar -zxf latest.tar.gz --strip-components=1;
 	sudo cp -R ./* /var/www/html/$DOMAIN_NAME;
 }
 
@@ -125,10 +122,10 @@ EOF
 
 function configDB(){
 	sudo cp /var/www/html/${DOMAIN_NAME}/wp-config-sample.php /var/www/html/${DOMAIN_NAME}/wp-config.php;
-	sudo cd /var/www/html/${DOMAIN_NAME}
-	sudo sed -i s/database_name_here/${DOMAIN_NAME}_db/ wp-config.php;
-	sudo sed -i s/username_here/$WP_DB_USERNAME/ wp-config.php;
-	sudo sed -i s/password_here/$WP_DB_PASSWORD/ wp-config.php;
+	cd /var/www/html/${DOMAIN_NAME}
+	sed -i s/database_name_here/${DOMAIN_NAME}_db/ wp-config.php;
+	sed -i s/username_here/$WP_DB_USERNAME/ wp-config.php;
+	sed -i s/password_here/$WP_DB_PASSWORD/ wp-config.php;
 }
 
 function configWebsite(){
