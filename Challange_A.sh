@@ -7,7 +7,8 @@ read -s MYSQL_ROOT_PASSWORD;
 WP_DB_PASSWORD=$MYSQL_ROOT_PASSWORD
 WP_DB_USERNAME='root'
 
-
+echo 'Please provide su access'
+sudo su
 
 # WordPress Documentation: https://codex.wordpress.org/Installing_WordPress
 function installPHP(){
