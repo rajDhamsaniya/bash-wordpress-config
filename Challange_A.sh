@@ -6,9 +6,9 @@ echo 'Provide Password for MySql root(If not installed it will take it as root):
 read -s MYSQL_ROOT_PASSWORD;
 WP_DB_PASSWORD=$MYSQL_ROOT_PASSWORD
 WP_DB_USERNAME='root'
+echo 'Provide su access'
+sudo -v
 
-echo 'Please provide su access'
-sudo su
 
 # WordPress Documentation: https://codex.wordpress.org/Installing_WordPress
 function installPHP(){
@@ -126,9 +126,9 @@ EOF
 function configDB(){
 	sudo cp /var/www/html/${DOMAIN_NAME}/wp-config-sample.php /var/www/html/${DOMAIN_NAME}/wp-config.php;
 	cd /var/www/html/${DOMAIN_NAME}
-	sed -i s/database_name_here/${DOMAIN_NAME}_db/ wp-config.php;
-	sed -i s/username_here/$WP_DB_USERNAME/ wp-config.php;
-	sed -i s/password_here/$WP_DB_PASSWORD/ wp-config.php;
+	sudo sed -i s/database_name_here/${DOMAIN_NAME}_db/ wp-config.php;
+	sudo sed -i s/username_here/$WP_DB_USERNAME/ wp-config.php;
+	sudo sed -i s/password_here/$WP_DB_PASSWORD/ wp-config.php;
 }
 
 function configWebsite(){
