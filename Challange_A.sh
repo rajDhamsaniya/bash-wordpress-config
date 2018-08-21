@@ -77,6 +77,7 @@ sudo tee /etc/nginx/sites-available/$DOMAIN_NAME <<EOF
 server {
         listen 80;
         listen [::]:80;
+
         root /var/www/html/$DOMAIN_NAME;
         # Add index.php to the list if you are using PHP
         index index.php index.html index.htm index.nginx-debian.html;
@@ -88,12 +89,14 @@ server {
         #
         location ~ \.php$ {
                 include snippets/fastcgi-php.conf;
+
                 fastcgi_pass unix:/run/php/php7.2-fpm.sock;
         }
 }
 EOF
 
 sudo ln -s /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/;
+sudo rm /etc/nginx/sites-available/default
 }
 
 
