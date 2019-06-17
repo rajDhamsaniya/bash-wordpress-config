@@ -1,9 +1,10 @@
+#! /bin/bash
 WP_DB_USERNAME='root'
 
 echo 'Please, provide a domain name: '
 read DOMAIN_NAME;
-echo 'Provide Password for MySql root(If not installed it will take it as root): '
-read -s MYSQL_ROOT_PASSWORD;
+# echo 'Provide Password for MySql root(If not installed it will take it as root): '
+# read -s MYSQL_ROOT_PASSWORD;
 WP_DB_PASSWORD=$MYSQL_ROOT_PASSWORD
 WP_DB_USERNAME='root'
 
@@ -11,10 +12,12 @@ WP_DB_USERNAME='root'
 
 # WordPress Documentation: https://codex.wordpress.org/Installing_WordPress
 function installPHP(){
-	sudo apt-get install software-properties-common
-	sudo add-apt-repository -sy ppa:ondrej/php
-	sudo add-apt-repository -sy ppa:ondrej/nginx-mainline
-	sudo apt update
+	# sudo apt-get install software-properties-common
+	# sudo add-apt-repository -sy ppa:ondrej/php
+	# sudo add-apt-repository -sy ppa:ondrej/nginx-mainline
+	# sudo apt update
+	sudo add-apt-repository -sy universe
+	sudo apt install -y php-fpm php-mysql
 }
 
 function checkPHPPackages(){
@@ -35,13 +38,15 @@ function checkPHPPackages(){
 
 # WordPress Documentation: https://codex.wordpress.org/Installing_WordPress
 function installNginx(){
-	sudo apt install -y nginx;
+	sudo apt update
+	sudo apt install -y nginx
+	sudo ufw allow 'Nginx HTTP'
 }
 
 # WordPress Documentation: https://codex.wordpress.org/Installing_WordPress
 function installMySql(){
-	MYSQL_ROOT_PASSWORD='root';
-	WP_DB_PASSWORD='${MYSQL_ROOT_PASSWORD}';
+	MYSQL_ROOT_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1);
+	WP_DB_PASSWORD=$MYSQL_ROOT_PASSWORD;
 	echo "mysql-server-5.7 mysql-server/root_password password $MYSQL_ROOT_PASSWORD" | sudo debconf-set-selections
 	echo "mysql-server-5.7 mysql-server/root_password_again password $MYSQL_ROOT_PASSWORD" | sudo debconf-set-selections
 	sudo apt install -y mysql-server
@@ -96,13 +101,14 @@ server {
 EOF
 
 sudo ln -s /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/;
-sudo rm /etc/nginx/sites-available/default
+# sudo rm /etc/nginx/sites-available/default
+sudo unlink /etc/nginx/sites-enabled/default
 }
 
 
 function documentRootDir(){
 	sudo mkdir -p /var/www/html/$DOMAIN_NAME;
-	cd /tmp/ && wget http://wordpress.org/latest.tar.gz;
+	cd /tmp/ && wget https://wordpress.org/latest.tar.gz;
 	tar -zxf latest.tar.gz --strip-components=1;
 	sudo cp -R ./* /var/www/html/$DOMAIN_NAME;
 }
@@ -129,6 +135,11 @@ function configDB(){
 	sed -i s/database_name_here/${DOMAIN_NAME}_db/ wp-config.php;
 	sed -i s/username_here/$WP_DB_USERNAME/ wp-config.php;
 	sed -i s/password_here/$WP_DB_PASSWORD/ wp-config.php;
+
+
+	SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
+	STRING='put your unique phrase here'
+	printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s wp-config.php
 }
 
 function configWebsite(){
@@ -140,10 +151,10 @@ curl "http://$DOMAIN_NAME/wp-admin/install.php?step=1" \
 --data-urlencode "pw_weak=1" \
 --data-urlencode "blog_public=0"
 
-curl "http://$DOMAIN_NAME/wp-login.php" \
---data-urlencode "user_login=$WP_ADMIN_USERNAME" \
---data-urlencode "admin_pass=$WP_ADMIN_PASSWORD" \
---data-urlencode "rememberme=1"
+# curl "http://$DOMAIN_NAME/wp-login.php" \
+# --data-urlencode "user_login=$WP_ADMIN_USERNAME" \
+# --data-urlencode "admin_pass=$WP_ADMIN_PASSWORD" \
+# --data-urlencode "rememberme=1"
 
 }
 
@@ -151,18 +162,6 @@ curl "http://$DOMAIN_NAME/wp-login.php" \
 
 
 ###################################################################################################################
-
-find=$(dpkg --list | grep 'php7.2-cli');
-if [ -n $find ] 2>/dev/null
-then 
-	#echo "in install php";
-	installPHP;
-else
-	echo "php is already installed";
-fi;
-
-
-checkPHPPackages php7.2-fpm php7.2-common php7.2-mbstring php7.2-xmlrpc php7.2-soap php7.2-gd php7.2-xml php7.2-intl php7.2-mysql php7.2-cli php7.2-zip php7.2-curl
 
 if ! which nginx > /dev/null 2>&1
 then
@@ -178,12 +177,25 @@ else
 	echo "MySql is already installed";
 fi
 
+find=$(dpkg --list | grep 'php7.2-cli');
+if [ -n $find ] 2>/dev/null
+then 
+	#echo "in install php";
+	installPHP;
+else
+	echo "php is already installed";
+fi;
+
+checkPHPPackages php-fpm php-common php-mbstring php-xmlrpc php-soap php-gd php-xml php-intl php-mysql php-cli php-zip php-curl
+
 sudo systemctl restart nginx.service
-sudo systemctl restart php7.2-fpm.service
+sudo systemctl restart php-fpm.service
 
 addHost
 
 configureDomain
+
+sudo systemctl reload nginx
 
 documentRootDir
 
@@ -197,7 +209,7 @@ sudo chmod -R 755 /var/www/html
 sudo nginx -t
 sudo systemctl restart nginx
 
-#configWebsite
+configWebsite
 
 sudo service nginx restart
 echo "Complete the installation with providing user info at http://$DOMAIN_NAME/wp-admin/install.php"
