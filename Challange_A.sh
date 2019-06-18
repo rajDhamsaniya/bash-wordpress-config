@@ -8,6 +8,8 @@
 WP_DB_PASSWORD=""
 WP_DB_USERNAME=""
 DOMAIN_NAME=""
+REMOVE_DOMAIN=""
+MYSQL_ROOT_PASSWORD=""
 
 function help(){
 
@@ -18,7 +20,7 @@ function help(){
 	echo -e "\n\t -p, --dbpass"
 	echo -e "\t\t Password for provided username if MySql already installed"
 	echo -e "\n\t -r, --remove"
-	echo -e "\t\t remove installed wordpress website only."
+	echo -e "\t\t remove installed wordpress website only. It accepts domain name of website to remove. It must be inserted at the end of command."
 	echo -e "\n\t -u, --dbuser"
 	echo -e "\t\t UserName for MySql Database if already installed"
 }
@@ -152,10 +154,10 @@ EOF
 }
 
 function removeDB(){
-WP_DB_NAME_a="\`${DOMAIN_NAME}_db\`"
+WP_DB_NAME_a="\`${REMOVE_DOMAIN}_db\`"
 
 sudo mysql -u $WP_DB_USERNAME -p$MYSQL_ROOT_PASSWORD << EOF
-DROP DATABASE '${WP_DB_NAME_a}';
+DROP DATABASE ${WP_DB_NAME_a};
 EOF
 }
 
@@ -174,11 +176,10 @@ function configDB(){
 
 function configWebsite(){
 curl "http://$DOMAIN_NAME/wp-admin/install.php?step=1" \
---data-urlencode "weblog_title=$DOMAIN_NAME"\
+--data-urlencode "weblog_title=$DOMAIN_NAME" \
 --data-urlencode "user_name=$WP_ADMIN_USERNAME" \
+--data-urlencode "admin_password=$WP_ADMIN_PASSWORD" \
 --data-urlencode "admin_email=$WP_ADMIN_EMAIL" \
---data-urlencode "pass1-text=$WP_ADMIN_PASSWORD" \
---data-urlencode "pw_weak=1" \
 --data-urlencode "blog_public=0"
 
 # curl "http://$DOMAIN_NAME/wp-login.php" \
@@ -209,7 +210,8 @@ while [[ -n "$1" ]]; do
 						help
 						;;
 		-p | --dbpass)  shift
-						WP_DB_PASSWORD="$1"
+						MYSQL_ROOT_PASSWORD="$1"
+						WP_DB_PASSWORD=$MYSQL_ROOT_PASSWORD
 						;;
 		-r | --remove)	shift
 						REMOVE_DOMAIN="$1"
