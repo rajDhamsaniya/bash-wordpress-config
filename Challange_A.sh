@@ -1,21 +1,30 @@
 #! /bin/bash
-WP_DB_USERNAME='root'
+# WP_DB_USERNAME='root'
 
-echo 'Please, provide a domain name: '
-read DOMAIN_NAME;
+# echo 'Please, provide a domain name: '
+# read DOMAIN_NAME;
 # echo 'Provide Password for MySql root(If not installed it will take it as root): '
 # read -s MYSQL_ROOT_PASSWORD;
-WP_DB_PASSWORD=$MYSQL_ROOT_PASSWORD
-WP_DB_USERNAME='root'
+WP_DB_PASSWORD=""
+WP_DB_USERNAME=""
+DOMAIN_NAME=""
 
+function help(){
 
+	echo -e "\t -d, --domain"
+	echo -e "\t\t For providing domain name."
+	echo -e "\n\t -h , --help"
+	echo -e "\t\t Help Menu"
+	echo -e "\n\t -p, --dbpass"
+	echo -e "\t\t Password for provided username if MySql already installed"
+	echo -e "\n\t -r, --remove"
+	echo -e "\t\t remove installed wordpress website only."
+	echo -e "\n\t -u, --dbuser"
+	echo -e "\t\t UserName for MySql Database if already installed"
+}
 
 # WordPress Documentation: https://codex.wordpress.org/Installing_WordPress
 function installPHP(){
-	# sudo apt-get install software-properties-common
-	# sudo add-apt-repository -sy ppa:ondrej/php
-	# sudo add-apt-repository -sy ppa:ondrej/nginx-mainline
-	# sudo apt update
 	sudo add-apt-repository -sy universe
 	sudo apt install -y php-fpm php-mysql
 }
@@ -47,9 +56,11 @@ function installNginx(){
 function installMySql(){
 	MYSQL_ROOT_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1);
 	WP_DB_PASSWORD=$MYSQL_ROOT_PASSWORD;
+	WP_DB_USERNAME="root"
 	echo "mysql-server-5.7 mysql-server/root_password password $MYSQL_ROOT_PASSWORD" | sudo debconf-set-selections
 	echo "mysql-server-5.7 mysql-server/root_password_again password $MYSQL_ROOT_PASSWORD" | sudo debconf-set-selections
 	sudo apt install -y mysql-server
+	echo -e "MySql is installed for root user with password : \e[1m\e[32m$MYSQL_ROOT_PASSWORD"
 }
 
 
@@ -71,6 +82,17 @@ function addHost() {
                 else
                     echo "Failed to Add $DOMAIN_NAME, Try again!";
             fi
+    fi
+}
+
+function removeHost() {
+	ETC_HOSTS=/etc/hosts
+    if [ -n "$(grep $REMOVE_DOMAIN /etc/hosts)" ]
+    then
+        echo "$REMOVE_DOMAIN Found in your $ETC_HOSTS, Removing now...";
+        sudo sed -i".bak" "/$REMOVE_DOMAIN/d" $ETC_HOSTS
+    else
+        echo "$REMOVE_DOMAIN was not found in your $ETC_HOSTS";
     fi
 }
 
@@ -117,7 +139,7 @@ function documentRootDir(){
 function createDB(){
 WP_DB_NAME_a="\`${DOMAIN_NAME}_db\`"
 
-sudo mysql -u root -p$MYSQL_ROOT_PASSWORD << EOF
+sudo mysql -u $WP_DB_USERNAME -p$MYSQL_ROOT_PASSWORD << EOF
 # SET GLOBAL validate_password_length = 4;
 # SET GLOBAL validate_password_number_count = 0;
 # SET GLOBAL validate_password_special_char_count = 0;
@@ -126,6 +148,14 @@ sudo mysql -u root -p$MYSQL_ROOT_PASSWORD << EOF
 CREATE DATABASE ${WP_DB_NAME_a};
 GRANT ALL ON ${WP_DB_NAME_a}.* TO '${WP_DB_USERNAME}'@'localhost';
 FLUSH PRIVILEGES;
+EOF
+}
+
+function removeDB(){
+WP_DB_NAME_a="\`${DOMAIN_NAME}_db\`"
+
+sudo mysql -u $WP_DB_USERNAME -p$MYSQL_ROOT_PASSWORD << EOF
+DROP DATABASE '${WP_DB_NAME_a}';
 EOF
 }
 
@@ -158,10 +188,44 @@ curl "http://$DOMAIN_NAME/wp-admin/install.php?step=1" \
 
 }
 
-
+function remove(){
+	removeHost
+	sudo unlink /etc/nginx/sites-enabled/$REMOVE_DOMAIN;
+	sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/;
+	sudo rm -rf /etc/nginx/sites-available/$REMOVE_DOMAIN;
+	sudo rm -rf /var/www/html/$DOMAIN_NAME
+	removeDB
+}
 
 
 ###################################################################################################################
+
+while [[ -n "$1" ]]; do
+	case "$1" in 
+		-d | --domain) 	shift
+						DOMAIN_NAME="$1"
+						;;
+		-h | --help) 	shift
+						help
+						;;
+		-p | --dbpass)  shift
+						WP_DB_PASSWORD="$1"
+						;;
+		-r | --remove)	shift
+						REMOVE_DOMAIN="$1"
+						remove
+						exit 
+						;;
+		-u | --dbuser)  shift
+						WP_DB_USERNAME="$1"
+						;;
+		*)				echo "Unknown Command Please refer help guide."
+						help
+						exit
+						;;
+	esac
+	shift
+done	
 
 if ! which nginx > /dev/null 2>&1
 then
@@ -209,12 +273,12 @@ sudo chmod -R 755 /var/www/html
 sudo nginx -t
 sudo systemctl restart nginx
 
-configWebsite
+# configWebsite
 
 sudo service nginx restart
 echo "Complete the installation with providing user info at http://$DOMAIN_NAME/wp-admin/install.php"
 echo "after that you can go to http://$DOMAIN_NAME happily."
-
+# echo -e "\n\t MYSQL_ROOT_PASSWORD = $MYSQL_ROOT_PASSWORD" 
 
 #References:
 # manual pages of all the shell codes
