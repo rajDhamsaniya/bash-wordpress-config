@@ -5,10 +5,26 @@
 - It is also assumed that it is not necessary to generate SSL certificate and configure it so it is skipped.
 
 ## Instruction
-- clone the repo and then,
-- Run these command and code will work fluently
+- clone the repo
+- This is help menu for the code
+```
+         -d, --domain
+                 For providing domain name.
+
+         -h , --help
+                 Help Menu
+
+         -p, --dbpass
+                 Password for provided username if MySql already installed
+
+         -r, --remove
+                 remove installed wordpress website only. It accepts domain name of website to remove. It must be inserted at the end of command.
+
+         -u, --dbuser
+                 UserName for MySql Database if already installed
+```
+- For fresh installation run provided code
 ```
 sudo su
-./Challange_A.sh
+./Challange_A.sh -d example.com
 ```
-- It is only required to answer the questions in the beggining then wait and watch.
