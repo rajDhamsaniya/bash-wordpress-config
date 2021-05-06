@@ -1,4 +1,4 @@
-# rtCamp System Engineer Challange A
+# Shell script to install and configure the wordpress site.
 
 ## Assumption
 - It is assumed that after creating the site user privilages will be set by manually through going to link.
